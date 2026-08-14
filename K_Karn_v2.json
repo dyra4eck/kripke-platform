@@ -1,0 +1,227 @@
+{
+  "states": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8",
+    "s9",
+    "s_cont",
+    "s_done"
+  ],
+  "initial_states": [
+    "s0"
+  ],
+  "transitions": [
+    [
+      "s0",
+      "s1"
+    ],
+    [
+      "s1",
+      "s3"
+    ],
+    [
+      "s1",
+      "s2"
+    ],
+    [
+      "s2",
+      "s4"
+    ],
+    [
+      "s2",
+      "s2"
+    ],
+    [
+      "s3",
+      "s5"
+    ],
+    [
+      "s3",
+      "s6"
+    ],
+    [
+      "s3",
+      "s7"
+    ],
+    [
+      "s4",
+      "s5"
+    ],
+    [
+      "s4",
+      "s7"
+    ],
+    [
+      "s5",
+      "s_cont"
+    ],
+    [
+      "s6",
+      "s8"
+    ],
+    [
+      "s6",
+      "s9"
+    ],
+    [
+      "s7",
+      "s_cont"
+    ],
+    [
+      "s8",
+      "s_cont"
+    ],
+    [
+      "s9",
+      "s_cont"
+    ],
+    [
+      "s_cont",
+      "s1"
+    ],
+    [
+      "s_cont",
+      "s_done"
+    ],
+    [
+      "s_done",
+      "s_done"
+    ]
+  ],
+  "state_predicates": [
+    {
+      "state": "s0",
+      "predicates": [
+        "Karn_idle"
+      ],
+      "comment": "Начало: tau=1, high=0, numT и time пусты (p.18, Algorithm 1)"
+    },
+    {
+      "state": "s1",
+      "predicates": [
+        "Pkt_first_send",
+        "tau_incremented"
+      ],
+      "comment": "snds(i): numT[i]:=1, time[i]:=tau (строки 5-9 Algorithm 1, p.19); I1/I2 гарантированы"
+    },
+    {
+      "state": "s2",
+      "predicates": [
+        "Pkt_retransmitted",
+        "tau_incremented"
+      ],
+      "comment": "snds(i) повторно: numT[i]>1, time[i] НЕ обновляется (строка 5, p.19)"
+    },
+    {
+      "state": "s3",
+      "predicates": [
+        "Window_unambiguous"
+      ],
+      "comment": "ok-to-sample потенциально TRUE: все пакеты [high,j) переданы ровно раз (p.20)"
+    },
+    {
+      "state": "s4",
+      "predicates": [
+        "Window_ambiguous"
+      ],
+      "comment": "ok-to-sample=FALSE: хотя бы один пакет ретрансмитирован (p.20)"
+    },
+    {
+      "state": "s5",
+      "predicates": [
+        "ACK_stale"
+      ],
+      "comment": "rcvs(j): j <= high — ACK проигнорирован (строка 12, p.19); Obs.1: монотонность"
+    },
+    {
+      "state": "s6",
+      "predicates": [
+        "ACK_fresh",
+        "Sample_produced"
+      ],
+      "comment": "rcvs(j): j>high И ok-to-sample=TRUE: S:=tau-time[high] (строки 13-16, p.19)"
+    },
+    {
+      "state": "s7",
+      "predicates": [
+        "ACK_fresh",
+        "ACK_no_sample"
+      ],
+      "comment": "rcvs(j): j>high НО ok-to-sample=FALSE: high:=j, выборка пропущена (строка 17, p.19)"
+    },
+    {
+      "state": "s8",
+      "predicates": [
+        "Sample_produced",
+        "FIFO_channel",
+        "Sample_exact",
+        "ACK_fresh"
+      ],
+      "comment": "FIFO-исполнение: S = rtt(high_prev) точно (Obs.4, p.21): sℓ[|S|]=rtt(sℓ₋₁[|high|]) | ACK_fresh наследуется из s6"
+    },
+    {
+      "state": "s9",
+      "predicates": [
+        "Sample_produced",
+        "NonFIFO_channel",
+        "Sample_pessimistic",
+        "ACK_fresh"
+      ],
+      "comment": "Не-FIFO: S — пессимистичная верхняя оценка RTT (Obs.3, p.20): rtt(ℓ)<=S для всех ℓ | ACK_fresh наследуется из s6"
+    },
+    {
+      "state": "s_cont",
+      "predicates": [
+        "tau_incremented"
+      ],
+      "comment": "Продолжение: tau++ (строка 19 Algorithm 1, p.19), high обновлён"
+    },
+    {
+      "state": "s_done",
+      "predicates": [
+        "Karn_done"
+      ],
+      "comment": "Все пакеты подтверждены, исполнение завершено"
+    }
+  ],
+  "specifications": [
+    "AG (EX TRUE)",
+    "AG !(Window_unambiguous & Window_ambiguous)",
+    "AG !(ACK_stale & ACK_fresh)",
+    "AG !(Sample_exact & Sample_pessimistic)",
+    "AG ((Sample_produced & FIFO_channel) -> Sample_exact)",
+    "AG ((Sample_produced & NonFIFO_channel) -> Sample_pessimistic)",
+    "AG (Sample_produced -> ACK_fresh)",
+    "AG (Window_ambiguous -> AF (ACK_no_sample | ACK_stale | Karn_done))",
+    "AG (Pkt_retransmitted -> AF Window_ambiguous)"
+  ],
+  "metadata": {
+    "protocol": "Karn's Algorithm (monitor)",
+    "source": "von Hippel (2025) arXiv:2511.01124, Chapter 2",
+    "pages": {
+      "Algorithm_1": "p. 19",
+      "ok_to_sample": "p. 20",
+      "Observation_1": "p. 17 (ACK monotonicity)",
+      "Observation_2": "p. 20 (I1: numT order, I2: time order)",
+      "Observation_3": "p. 20 (pessimistic upper bound)",
+      "Observation_4": "p. 21 (FIFO exact sample)"
+    },
+    "variables": {
+      "numT[i]": "ℕ⁺→ℕ: число передач пакета i",
+      "time[i]": "ℕ⁺→ℕ: время первой передачи пакета i",
+      "high": "ℕ: наибольший полученный ACK",
+      "tau": "ℕ: счётчик времени (такты алгоритма)",
+      "S": "ℕ⁺: текущая выборка RTT (вывод)"
+    },
+    "key_distinction_from_K_RTO": "K_Karn моделирует сам алгоритм выборки (монитор над исполнением). K_RTO моделирует RTO-вычисление, использующее выходы K_Karn как вход. Они верифицируют разные свойства одной цепочки."
+  },
+  "fairness": [
+    "Sample_produced | Karn_done | ACK_stale"
+  ]
+}

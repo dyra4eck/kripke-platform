@@ -1,0 +1,97 @@
+MODULE main
+VAR
+	state_ : {s0, s1, s2, s3, s4, s5, s6, s7, s8, s_t1, s_t2, s_t3, s_done};
+	ACK_received : boolean;
+	Channel_open : boolean;
+	Connection_complete : boolean;
+	Packet_in_channel : boolean;
+	Retransmission_started : boolean;
+	Waiting_ACK : boolean;
+	timeout_fired : boolean;
+	transmitting : boolean;
+	window_full : boolean;
+
+ASSIGN
+	init(state_) := s0;
+	next(state_) := case
+		(state_ = s0) : {s1};
+		(state_ = s1) : {s2, s3};
+		(state_ = s2) : {s4, s6, s_t1};
+		(state_ = s3) : {s4};
+		(state_ = s4) : {s5, s6};
+		(state_ = s5) : {s7, s_done, s_t2};
+		(state_ = s6) : {s7};
+		(state_ = s7) : {s8, s_done};
+		(state_ = s8) : {s_done, s_t3};
+		(state_ = s_t1) : {s0};
+		(state_ = s_t2) : {s3};
+		(state_ = s_t3) : {s6};
+		(state_ = s_done) : {s_done};
+		TRUE: state_;
+	esac;
+
+-- Predicate definitions
+	ACK_received :=
+		case
+			(state_ = s6) | (state_ = s3) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Channel_open :=
+		case
+			(state_ = s7) | (state_ = s6) | (state_ = s4) | (state_ = s3) | (state_ = s1) | (state_ = s0) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Connection_complete :=
+		case
+			(state_ = s_done) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Packet_in_channel :=
+		case
+			(state_ = s7) | (state_ = s4) | (state_ = s1) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Retransmission_started :=
+		case
+			(state_ = s_t1) | (state_ = s_t2) | (state_ = s_t3) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Waiting_ACK :=
+		case
+			(state_ = s8) | (state_ = s5) | (state_ = s2) : TRUE;
+			TRUE : FALSE;
+		esac;
+	timeout_fired :=
+		case
+			(state_ = s_t1) | (state_ = s_t2) | (state_ = s_t3) : TRUE;
+			TRUE : FALSE;
+		esac;
+	transmitting :=
+		case
+			(state_ = s7) | (state_ = s6) | (state_ = s4) | (state_ = s3) | (state_ = s1) | (state_ = s0) : TRUE;
+			TRUE : FALSE;
+		esac;
+	window_full :=
+		case
+			(state_ = s8) | (state_ = s5) | (state_ = s2) : TRUE;
+			TRUE : FALSE;
+		esac;
+
+SPEC
+	AG (EX TRUE)
+
+SPEC
+	AG ((window_full & !Connection_complete) -> AF transmitting)
+
+SPEC
+	AG !(window_full & transmitting)
+
+SPEC
+	AG (timeout_fired -> AF transmitting)
+
+SPEC
+	AG (transmitting -> AF (window_full | Connection_complete))
+
+SPEC
+	AG (ACK_received -> AF (window_full | Connection_complete))
+

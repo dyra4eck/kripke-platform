@@ -1,0 +1,267 @@
+{
+  "states": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8",
+    "s9",
+    "s10",
+    "s11",
+    "s12",
+    "s_done",
+    "s_abort"
+  ],
+  "initial_states": [
+    "s0"
+  ],
+  "transitions": [
+    [
+      "s0",
+      "s1"
+    ],
+    [
+      "s1",
+      "s2"
+    ],
+    [
+      "s1",
+      "s3"
+    ],
+    [
+      "s2",
+      "s6"
+    ],
+    [
+      "s2",
+      "s3"
+    ],
+    [
+      "s3",
+      "s4"
+    ],
+    [
+      "s4",
+      "s5"
+    ],
+    [
+      "s4",
+      "s3"
+    ],
+    [
+      "s5",
+      "s1"
+    ],
+    [
+      "s6",
+      "s7"
+    ],
+    [
+      "s6",
+      "s8"
+    ],
+    [
+      "s7",
+      "s8"
+    ],
+    [
+      "s8",
+      "s9"
+    ],
+    [
+      "s9",
+      "s10"
+    ],
+    [
+      "s9",
+      "s11"
+    ],
+    [
+      "s10",
+      "s1"
+    ],
+    [
+      "s10",
+      "s_done"
+    ],
+    [
+      "s11",
+      "s12"
+    ],
+    [
+      "s12",
+      "s3"
+    ],
+    [
+      "s_done",
+      "s_done"
+    ],
+    [
+      "s4",
+      "s_abort"
+    ],
+    [
+      "s_abort",
+      "s_abort"
+    ]
+  ],
+  "state_predicates": [
+    {
+      "state": "s0",
+      "predicates": [
+        "Karn_idle"
+      ],
+      "comment": "Исходное состояние: high=0, τ=1, пакеты не отправлялись"
+    },
+    {
+      "state": "s1",
+      "predicates": [
+        "transmission_active",
+        "Karn_tracking"
+      ],
+      "comment": "Пакет отправлен впервые: numT[i]=1, time[i]=τ записаны"
+    },
+    {
+      "state": "s2",
+      "predicates": [
+        "transmission_active",
+        "sampling_enabled",
+        "Karn_tracking"
+      ],
+      "comment": "Ожидание ACK: все пакеты переданы ровно один раз — ok-to-sample потенциально TRUE"
+    },
+    {
+      "state": "s3",
+      "predicates": [
+        "transmission_active",
+        "sampling_blocked",
+        "Retransmission_active"
+      ],
+      "comment": "Ретрансмиссия: numT[i]>1 — алгоритм Карна блокирует выборку RTT"
+    },
+    {
+      "state": "s4",
+      "predicates": [
+        "transmission_active",
+        "sampling_blocked"
+      ],
+      "comment": "Ожидание ACK после ретрансмиссии: ACK будет неоднозначным"
+    },
+    {
+      "state": "s5",
+      "predicates": [
+        "sampling_blocked",
+        "ACK_ambiguous"
+      ],
+      "comment": "Получен неоднозначный ACK: high обновлён, выборка пропущена (Obs.3/4)"
+    },
+    {
+      "state": "s6",
+      "predicates": [
+        "fresh_sample",
+        "Karn_sampled"
+      ],
+      "comment": "ok-to-sample=TRUE: S = τ - time[high] — свежая выборка RTT получена"
+    },
+    {
+      "state": "s7",
+      "predicates": [
+        "rto_initialized",
+        "RTO_first_sample"
+      ],
+      "comment": "Первая выборка: srtt₁=S, rttvar₁=S/2, rto₁=srtt+max(G,4·rttvar)"
+    },
+    {
+      "state": "s8",
+      "predicates": [
+        "rto_initialized",
+        "RTO_updating"
+      ],
+      "comment": "Обновление RTO: srtt и rttvar пересчитываются по последующим выборкам"
+    },
+    {
+      "state": "s9",
+      "predicates": [
+        "rto_initialized",
+        "srtt_converging",
+        "RTO_steady_state"
+      ],
+      "comment": "Установившийся режим c/r: выборки в [c-r,c+r], srtt сходится (Obs.5)"
+    },
+    {
+      "state": "s10",
+      "predicates": [
+        "rto_initialized",
+        "srtt_converging",
+        "rto_adequate"
+      ],
+      "comment": "rto ≥ RTT: ложные таймауты исключены — канал используется эффективно"
+    },
+    {
+      "state": "s11",
+      "predicates": [
+        "rto_initialized",
+        "srtt_converging",
+        "timeout_risk"
+      ],
+      "comment": "Патологический случай (Obs.6): rttvar падает ниже r, rto может < RTT"
+    },
+    {
+      "state": "s12",
+      "predicates": [
+        "spurious_timeout",
+        "sampling_blocked"
+      ],
+      "comment": "Ложный таймаут сработал: rto < RTT, ненужная ретрансмиссия"
+    },
+    {
+      "state": "s_done",
+      "predicates": [
+        "Transmission_complete"
+      ],
+      "comment": "Все пакеты доставлены, соединение завершено"
+    },
+    {
+      "state": "s_abort",
+      "predicates": [
+        "Connection_aborted",
+        "sampling_blocked"
+      ],
+      "comment": "Соединение разорвано после превышения лимита ретрансмиссий (TCP max retries)"
+    }
+  ],
+  "specifications": [
+    "AG (EX TRUE)",
+    "AG !(sampling_enabled & sampling_blocked)",
+    "AG ((sampling_blocked & !Transmission_complete & !Connection_aborted) -> AF (sampling_enabled | Transmission_complete | Connection_aborted))",
+    "AG (fresh_sample -> AF rto_initialized)",
+    "AG (rto_initialized -> AF (rto_adequate | spurious_timeout))",
+    "AG !(rto_adequate & timeout_risk)",
+    "AG (spurious_timeout -> AF sampling_blocked)"
+  ],
+  "metadata": {
+    "protocol": "Karn's Algorithm + RFC 6298 RTO",
+    "source": "von Hippel (2025) arXiv:2511.01124, Chapter 2",
+    "parameters": {
+      "alpha": "1/8  (srtt smoothing factor)",
+      "beta": "1/4  (rttvar smoothing factor)",
+      "G": "clock granularity"
+    },
+    "abstraction": "Числовые значения srtt/rttvar/rto абстрагированы в качественные фазы (INIT, UPDATING, STEADY, ADEQUATE, RISK). Это стандартная конечная абстракция для верификации численных протоколов.",
+    "observations_mapped": {
+      "Obs1": "Монотонность ACK — структурный инвариант модели",
+      "Obs2": "I1/I2 — гарантированы структурой переходов s1→s2",
+      "Obs3": "sampling_blocked покрывает случай ретрансмиссии",
+      "Obs4": "s6: ok-to-sample=TRUE только при FIFO-однозначности",
+      "Obs5": "s9→s10: srtt_converging → rto_adequate",
+      "Obs6": "s9→s11: патологический случай rttvar < r"
+    }
+  },
+  "fairness": [
+    "sampling_enabled | Transmission_complete | Connection_aborted"
+  ]
+}

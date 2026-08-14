@@ -1,0 +1,232 @@
+{
+  "states": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7",
+    "s8",
+    "s_t1",
+    "s_t2",
+    "s_t3",
+    "s_done"
+  ],
+  "initial_states": [
+    "s0"
+  ],
+  "transitions": [
+    [
+      "s0",
+      "s1"
+    ],
+    [
+      "s1",
+      "s2"
+    ],
+    [
+      "s1",
+      "s3"
+    ],
+    [
+      "s2",
+      "s4"
+    ],
+    [
+      "s2",
+      "s6"
+    ],
+    [
+      "s2",
+      "s_t1"
+    ],
+    [
+      "s3",
+      "s4"
+    ],
+    [
+      "s4",
+      "s5"
+    ],
+    [
+      "s4",
+      "s6"
+    ],
+    [
+      "s5",
+      "s7"
+    ],
+    [
+      "s5",
+      "s_t2"
+    ],
+    [
+      "s5",
+      "s_done"
+    ],
+    [
+      "s6",
+      "s7"
+    ],
+    [
+      "s7",
+      "s8"
+    ],
+    [
+      "s7",
+      "s_done"
+    ],
+    [
+      "s8",
+      "s_t3"
+    ],
+    [
+      "s8",
+      "s_done"
+    ],
+    [
+      "s_t1",
+      "s0"
+    ],
+    [
+      "s_t2",
+      "s3"
+    ],
+    [
+      "s_t3",
+      "s6"
+    ],
+    [
+      "s_done",
+      "s_done"
+    ]
+  ],
+  "state_predicates": [
+    {
+      "state": "s0",
+      "predicates": [
+        "transmitting",
+        "Channel_open"
+      ],
+      "comment": "hiAck=1 curPkt=1  OPEN: 1 < 1+2=3"
+    },
+    {
+      "state": "s1",
+      "predicates": [
+        "transmitting",
+        "Channel_open",
+        "Packet_in_channel"
+      ],
+      "comment": "hiAck=1 curPkt=2  OPEN: 2 < 1+2=3"
+    },
+    {
+      "state": "s2",
+      "predicates": [
+        "window_full",
+        "Waiting_ACK"
+      ],
+      "comment": "hiAck=1 curPkt=3  FULL: 3 = 1+2=3  окно заполнено"
+    },
+    {
+      "state": "s3",
+      "predicates": [
+        "transmitting",
+        "Channel_open",
+        "ACK_received"
+      ],
+      "comment": "hiAck=2 curPkt=2  OPEN: 2 < 2+2=4  после rcvAck(2)"
+    },
+    {
+      "state": "s4",
+      "predicates": [
+        "transmitting",
+        "Channel_open",
+        "Packet_in_channel"
+      ],
+      "comment": "hiAck=2 curPkt=3  OPEN: 3 < 2+2=4"
+    },
+    {
+      "state": "s5",
+      "predicates": [
+        "window_full",
+        "Waiting_ACK"
+      ],
+      "comment": "hiAck=2 curPkt=4  FULL: 4 = 2+2=4  окно заполнено"
+    },
+    {
+      "state": "s6",
+      "predicates": [
+        "transmitting",
+        "Channel_open",
+        "ACK_received"
+      ],
+      "comment": "hiAck=3 curPkt=3  OPEN: 3 < 3+2=5  после rcvAck(3)"
+    },
+    {
+      "state": "s7",
+      "predicates": [
+        "transmitting",
+        "Channel_open",
+        "Packet_in_channel"
+      ],
+      "comment": "hiAck=3 curPkt=4  OPEN: 4 < 3+2=5"
+    },
+    {
+      "state": "s8",
+      "predicates": [
+        "window_full",
+        "Waiting_ACK"
+      ],
+      "comment": "hiAck=3 curPkt=5  FULL: 5 = 3+2=5  окно заполнено"
+    },
+    {
+      "state": "s_t1",
+      "predicates": [
+        "timeout_fired",
+        "Retransmission_started"
+      ],
+      "comment": "таймаут из окна 1  curPkt <- hiAck=1  -> возврат в s0"
+    },
+    {
+      "state": "s_t2",
+      "predicates": [
+        "timeout_fired",
+        "Retransmission_started"
+      ],
+      "comment": "таймаут из окна 2  curPkt <- hiAck=2  -> возврат в s3"
+    },
+    {
+      "state": "s_t3",
+      "predicates": [
+        "timeout_fired",
+        "Retransmission_started"
+      ],
+      "comment": "таймаут из окна 3  curPkt <- hiAck=3  -> возврат в s6"
+    },
+    {
+      "state": "s_done",
+      "predicates": [
+        "Connection_complete"
+      ],
+      "comment": "все пакеты доставлены  hiAck > 3  за пределами абстракции N=2"
+    }
+  ],
+  "specifications": [
+    "AG (EX TRUE)",
+    "AG ((window_full & !Connection_complete) -> AF transmitting)",
+    "AG !(window_full & transmitting)",
+    "AG (timeout_fired -> AF transmitting)",
+    "AG (transmitting -> AF (window_full | Connection_complete))",
+    "AG (ACK_received -> AF (window_full | Connection_complete))"
+  ],
+  "metadata": {
+    "protocol": "Go-Back-N",
+    "window_size_N": 2,
+    "hiAck_range": "1..3",
+    "curPkt_range": "1..5",
+    "source": "von Hippel (2025) arXiv:2511.01124, Chapter 3",
+    "state_encoding": "s{i}: (hiAck, curPkt) pair; s_t{i}: timeout state; s_done: terminal"
+  }
+}

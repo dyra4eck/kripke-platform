@@ -1,0 +1,145 @@
+MODULE main
+VAR
+	state_ : {s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s_cont, s_done};
+	ACK_fresh : boolean;
+	ACK_no_sample : boolean;
+	ACK_stale : boolean;
+	FIFO_channel : boolean;
+	Karn_done : boolean;
+	Karn_idle : boolean;
+	NonFIFO_channel : boolean;
+	Pkt_first_send : boolean;
+	Pkt_retransmitted : boolean;
+	Sample_exact : boolean;
+	Sample_pessimistic : boolean;
+	Sample_produced : boolean;
+	Window_ambiguous : boolean;
+	Window_unambiguous : boolean;
+	tau_incremented : boolean;
+
+-- Fairness constraint
+FAIRNESS
+	Sample_produced | Karn_done | ACK_stale
+
+ASSIGN
+	init(state_) := s0;
+	next(state_) := case
+		(state_ = s0) : {s1};
+		(state_ = s1) : {s2, s3};
+		(state_ = s2) : {s2, s4};
+		(state_ = s3) : {s5, s6, s7};
+		(state_ = s4) : {s5, s7};
+		(state_ = s5) : {s_cont};
+		(state_ = s6) : {s8, s9};
+		(state_ = s7) : {s_cont};
+		(state_ = s8) : {s_cont};
+		(state_ = s9) : {s_cont};
+		(state_ = s_cont) : {s1, s_done};
+		(state_ = s_done) : {s_done};
+		TRUE: state_;
+	esac;
+
+-- Predicate definitions
+	ACK_fresh :=
+		case
+			(state_ = s8) | (state_ = s9) | (state_ = s7) | (state_ = s6) : TRUE;
+			TRUE : FALSE;
+		esac;
+	ACK_no_sample :=
+		case
+			(state_ = s7) : TRUE;
+			TRUE : FALSE;
+		esac;
+	ACK_stale :=
+		case
+			(state_ = s5) : TRUE;
+			TRUE : FALSE;
+		esac;
+	FIFO_channel :=
+		case
+			(state_ = s8) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Karn_done :=
+		case
+			(state_ = s_done) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Karn_idle :=
+		case
+			(state_ = s0) : TRUE;
+			TRUE : FALSE;
+		esac;
+	NonFIFO_channel :=
+		case
+			(state_ = s9) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Pkt_first_send :=
+		case
+			(state_ = s1) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Pkt_retransmitted :=
+		case
+			(state_ = s2) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Sample_exact :=
+		case
+			(state_ = s8) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Sample_pessimistic :=
+		case
+			(state_ = s9) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Sample_produced :=
+		case
+			(state_ = s8) | (state_ = s9) | (state_ = s6) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Window_ambiguous :=
+		case
+			(state_ = s4) : TRUE;
+			TRUE : FALSE;
+		esac;
+	Window_unambiguous :=
+		case
+			(state_ = s3) : TRUE;
+			TRUE : FALSE;
+		esac;
+	tau_incremented :=
+		case
+			(state_ = s_cont) | (state_ = s2) | (state_ = s1) : TRUE;
+			TRUE : FALSE;
+		esac;
+
+SPEC
+	AG (EX TRUE)
+
+SPEC
+	AG !(Window_unambiguous & Window_ambiguous)
+
+SPEC
+	AG !(ACK_stale & ACK_fresh)
+
+SPEC
+	AG !(Sample_exact & Sample_pessimistic)
+
+SPEC
+	AG ((Sample_produced & FIFO_channel) -> Sample_exact)
+
+SPEC
+	AG ((Sample_produced & NonFIFO_channel) -> Sample_pessimistic)
+
+SPEC
+	AG (Sample_produced -> ACK_fresh)
+
+SPEC
+	AG (Window_ambiguous -> AF (ACK_no_sample | ACK_stale | Karn_done))
+
+SPEC
+	AG (Pkt_retransmitted -> AF Window_ambiguous)
+
