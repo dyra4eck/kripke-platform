@@ -1,2 +1,7 @@
 json/
+build/
+out/
+vendor/
+compile_commands.json
+.cache/
 
