@@ -96,22 +96,27 @@ jobs:
       - name: golden tests
         run: ctest --test-dir build --output-on-failure
 
-      - name: converter rejects bad input without crashing
+      - name: converter exit codes
         run: |
           fail=0
-          printf 'not json'  > /tmp/notjson.json
-          printf '{}'        > /tmp/empty.json
-          for f in /tmp/notjson.json /tmp/empty.json; do
-            ./build/kripke_generator "$f" /tmp/out.smv >/dev/null 2>&1
-            rc=$?
-            # 1 = rejected cleanly. 139/134 = segfault/abort, i.e. a crash.
-            if [ "$rc" -ne 1 ]; then
-              echo "::error::$f gave exit $rc, expected 1"
+          expect_exit() {
+            local want="$1"; shift
+            local rc=0
+            "$@" >/dev/null 2>&1 || rc=$?
+            if [ "$rc" -ne "$want" ]; then
+              echo "::error::$* gave exit $rc, expected $want"
               fail=1
+            else
+              echo "ok: exit $rc from $*"
             fi
-          done
-          ./build/kripke_generator /tmp/does-not-exist.json >/dev/null 2>&1
-          [ $? -eq 2 ] || { echo "::error::missing file should exit 2"; fail=1; }
+          }
+          printf 'not json' > /tmp/notjson.json
+          printf '{}'       > /tmp/empty.json
+          # 1 = rejected cleanly; 139/134 would mean segfault/abort
+          expect_exit 1 ./build/kripke_generator /tmp/notjson.json /tmp/out.smv
+          expect_exit 1 ./build/kripke_generator /tmp/empty.json   /tmp/out.smv
+          expect_exit 2 ./build/kripke_generator /tmp/nope.json    /tmp/out.smv
+          expect_exit 0 ./build/kripke_generator examples/K_GBN_fixed.json /tmp/out.smv
           exit $fail
 
       - uses: actions/upload-artifact@v4
