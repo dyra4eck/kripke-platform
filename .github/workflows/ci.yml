@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate models
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install jsonschema
+
+      - name: schema self-check
+        run: python3 -m json.tool schemas/kripke.schema.json > /dev/null
+
+      - name: validate every example
+        run: |
+          fail=0
+          for f in examples/*.json; do
+            python3 scripts/validate_model.py "$f" || fail=1
+          done
+          exit $fail
+
+      # A validator that never rejects anything is worthless, so prove it
+      # still bites. Each of these must exit 1.
+      - name: negative cases
+        run: |
+          mkdir -p /tmp/kt
+          cat > /tmp/kt/dead.json <<'EOF'
+          {"states":["s0","s1"],"initial_states":["s0"],
+           "transitions":[["s0","s1"]],
+           "state_predicates":[{"state":"s0","predicates":["p"]},
+                               {"state":"s1","predicates":[]}]}
+          EOF
+          cat > /tmp/kt/empty_init.json <<'EOF'
+          {"states":["s0"],"initial_states":[],"transitions":[["s0","s0"]],
+           "state_predicates":[{"state":"s0","predicates":[]}]}
+          EOF
+          cat > /tmp/kt/inject.json <<'EOF'
+          {"states":["s0","x}; MODULE evil"],"initial_states":["s0"],
+           "transitions":[["s0","s0"]],
+           "state_predicates":[{"state":"s0","predicates":[]}]}
+          EOF
+          fail=0
+          for f in /tmp/kt/*.json; do
+            if python3 scripts/validate_model.py "$f" 2>/dev/null; then
+              echo "::error::validator accepted $f but should have rejected it"
+              fail=1
+            else
+              echo "correctly rejected $(basename "$f")"
+            fi
+          done
+          exit $fail
+
+  build:
+    name: build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: gcc,          cxx: g++,     flags: "" }
+          - { name: clang,        cxx: clang++, flags: "" }
+          # libc++ orders its containers independently of libstdc++. If the
+          # generator ever leaks container iteration order into the emitted
+          # SMV again, this is the job that catches it.
+          - { name: clang-libc++, cxx: clang++, flags: "-stdlib=libc++" }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install toolchain
+        if: startsWith(matrix.name, 'clang')
+        run: sudo apt-get update && sudo apt-get install -y clang libc++-dev libc++abi-dev
+
+      - name: configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_CXX_FLAGS="${{ matrix.flags }}"
+
+      - name: build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: golden tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: converter rejects bad input without crashing
+        run: |
+          fail=0
+          printf 'not json'  > /tmp/notjson.json
+          printf '{}'        > /tmp/empty.json
+          for f in /tmp/notjson.json /tmp/empty.json; do
+            ./build/kripke_generator "$f" /tmp/out.smv >/dev/null 2>&1
+            rc=$?
+            # 1 = rejected cleanly. 139/134 = segfault/abort, i.e. a crash.
+            if [ "$rc" -ne 1 ]; then
+              echo "::error::$f gave exit $rc, expected 1"
+              fail=1
+            fi
+          done
+          ./build/kripke_generator /tmp/does-not-exist.json >/dev/null 2>&1
+          [ $? -eq 2 ] || { echo "::error::missing file should exit 2"; fail=1; }
+          exit $fail
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smv-${{ matrix.name }}
+          path: build/*.smv
+          retention-days: 7
