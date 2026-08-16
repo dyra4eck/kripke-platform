@@ -109,12 +109,12 @@ ASSIGN
 		esac;
 	rto_initialized :=
 		case
-			(state_ = s10) | (state_ = s7) | (state_ = s9) | (state_ = s8) | (state_ = s11) : TRUE;
+			(state_ = s10) | (state_ = s11) | (state_ = s7) | (state_ = s8) | (state_ = s9) : TRUE;
 			TRUE : FALSE;
 		esac;
 	sampling_blocked :=
 		case
-			(state_ = s3) | (state_ = s5) | (state_ = s4) | (state_ = s12) | (state_ = s_abort) : TRUE;
+			(state_ = s12) | (state_ = s3) | (state_ = s4) | (state_ = s5) | (state_ = s_abort) : TRUE;
 			TRUE : FALSE;
 		esac;
 	sampling_enabled :=
@@ -129,7 +129,7 @@ ASSIGN
 		esac;
 	srtt_converging :=
 		case
-			(state_ = s10) | (state_ = s9) | (state_ = s11) : TRUE;
+			(state_ = s10) | (state_ = s11) | (state_ = s9) : TRUE;
 			TRUE : FALSE;
 		esac;
 	timeout_risk :=
@@ -139,7 +139,7 @@ ASSIGN
 		esac;
 	transmission_active :=
 		case
-			(state_ = s1) | (state_ = s3) | (state_ = s4) | (state_ = s2) : TRUE;
+			(state_ = s1) | (state_ = s2) | (state_ = s3) | (state_ = s4) : TRUE;
 			TRUE : FALSE;
 		esac;
 
