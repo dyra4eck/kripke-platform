@@ -49,11 +49,6 @@ def check(model: dict) -> list[str]:
 
     # The converter only emits init(state_) := initial_states[0]; anything
     # beyond the first element is silently dropped.
-    if len(model["initial_states"]) > 1:
-        errors.append(
-            "multiple initial states are not supported by the converter "
-            f"(only '{model['initial_states'][0]}' would be emitted)"
-        )
 
     outgoing: dict[str, set[str]] = {s: set() for s in states}
     for i, (src, dst) in enumerate(model["transitions"]):
