@@ -78,10 +78,7 @@ ASSIGN
 		esac;
 
 SPEC
-	AG (EX TRUE)
-
-SPEC
-	AG ((window_full & !Connection_complete) -> AF transmitting)
+	AG ((window_full & !Connection_complete) -> AF (transmitting | Connection_complete))
 
 SPEC
 	AG !(window_full & transmitting)

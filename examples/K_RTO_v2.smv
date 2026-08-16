@@ -144,9 +144,6 @@ ASSIGN
 		esac;
 
 SPEC
-	AG (EX TRUE)
-
-SPEC
 	AG !(sampling_enabled & sampling_blocked)
 
 SPEC

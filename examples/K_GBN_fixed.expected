@@ -1,0 +1,5 @@
+-- specification AG !(window_full & transmitting)  is true
+-- specification AG (timeout_fired -> AF transmitting)  is true
+-- specification AG ((window_full & !Connection_complete) -> AF (transmitting | Connection_complete))  is true
+-- specification AG (transmitting -> AF (window_full | Connection_complete))  is true
+-- specification AG (ACK_received -> AF (window_full | Connection_complete))  is true
