@@ -42,7 +42,7 @@ ASSIGN
 -- Predicate definitions
 	ACK_fresh :=
 		case
-			(state_ = s8) | (state_ = s9) | (state_ = s7) | (state_ = s6) : TRUE;
+			(state_ = s6) | (state_ = s7) | (state_ = s8) | (state_ = s9) : TRUE;
 			TRUE : FALSE;
 		esac;
 	ACK_no_sample :=
@@ -97,7 +97,7 @@ ASSIGN
 		esac;
 	Sample_produced :=
 		case
-			(state_ = s8) | (state_ = s9) | (state_ = s6) : TRUE;
+			(state_ = s6) | (state_ = s8) | (state_ = s9) : TRUE;
 			TRUE : FALSE;
 		esac;
 	Window_ambiguous :=
@@ -112,7 +112,7 @@ ASSIGN
 		esac;
 	tau_incremented :=
 		case
-			(state_ = s_cont) | (state_ = s2) | (state_ = s1) : TRUE;
+			(state_ = s1) | (state_ = s2) | (state_ = s_cont) : TRUE;
 			TRUE : FALSE;
 		esac;
 
