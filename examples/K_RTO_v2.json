@@ -235,7 +235,6 @@
     }
   ],
   "specifications": [
-    "AG (EX TRUE)",
     "AG !(sampling_enabled & sampling_blocked)",
     "AG ((sampling_blocked & !Transmission_complete & !Connection_aborted) -> AF (sampling_enabled | Transmission_complete | Connection_aborted))",
     "AG (fresh_sample -> AF rto_initialized)",

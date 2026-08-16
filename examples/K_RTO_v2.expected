@@ -1,0 +1,6 @@
+-- specification AG !(sampling_enabled & sampling_blocked)  is true
+-- specification AG (((sampling_blocked & !Transmission_complete) & !Connection_aborted) -> AF ((sampling_enabled | Transmission_complete) | Connection_aborted))  is true
+-- specification AG (fresh_sample -> AF rto_initialized)  is true
+-- specification AG !(rto_adequate & timeout_risk)  is true
+-- specification AG (spurious_timeout -> AF sampling_blocked)  is true
+-- specification AG (rto_initialized -> AF (rto_adequate | spurious_timeout))  is true

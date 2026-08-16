@@ -191,7 +191,6 @@
     }
   ],
   "specifications": [
-    "AG (EX TRUE)",
     "AG !(Window_unambiguous & Window_ambiguous)",
     "AG !(ACK_stale & ACK_fresh)",
     "AG !(Sample_exact & Sample_pessimistic)",

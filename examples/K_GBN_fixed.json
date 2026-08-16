@@ -214,8 +214,7 @@
     }
   ],
   "specifications": [
-    "AG (EX TRUE)",
-    "AG ((window_full & !Connection_complete) -> AF transmitting)",
+    "AG ((window_full & !Connection_complete) -> AF (transmitting | Connection_complete))",
     "AG !(window_full & transmitting)",
     "AG (timeout_fired -> AF transmitting)",
     "AG (transmitting -> AF (window_full | Connection_complete))",

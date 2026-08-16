@@ -1,0 +1,8 @@
+-- specification AG !(ACK_stale & ACK_fresh)  is true
+-- specification AG (Sample_produced -> ACK_fresh)  is true
+-- specification AG !(Window_unambiguous & Window_ambiguous)  is true
+-- specification AG !(Sample_exact & Sample_pessimistic)  is true
+-- specification AG ((Sample_produced & FIFO_channel) -> Sample_exact)  is true
+-- specification AG ((Sample_produced & NonFIFO_channel) -> Sample_pessimistic)  is true
+-- specification AG (Window_ambiguous -> AF ((ACK_no_sample | ACK_stale) | Karn_done))  is true
+-- specification AG (Pkt_retransmitted -> AF Window_ambiguous)  is true

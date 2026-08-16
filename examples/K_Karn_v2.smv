@@ -117,9 +117,6 @@ ASSIGN
 		esac;
 
 SPEC
-	AG (EX TRUE)
-
-SPEC
 	AG !(Window_unambiguous & Window_ambiguous)
 
 SPEC
