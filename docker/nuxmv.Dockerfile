@@ -2,6 +2,8 @@ ARG BASE=debian:trixie-slim
 
 FROM ${BASE} AS unpack
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
         xz-utils ca-certificates \
     && rm -rf /var/lib/apt/lists/*

@@ -6,6 +6,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  CONVERTER_IMAGE: ghcr.io/${{ github.repository_owner }}/kripke-converter
+  PIPELINE_IMAGE: ghcr.io/${{ github.repository_owner }}/kripke-pipeline
+  NUXMV_IMAGE: ghcr.io/${{ github.repository_owner }}/nuxmv:2.2.0
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -62,6 +68,16 @@ jobs:
             fi
           done
           exit $fail
+
+  lint-dockerfiles:
+    name: hadolint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          dockerfile: docker/*.Dockerfile
 
   build:
     name: build ${{ matrix.name }}
@@ -125,3 +141,89 @@ jobs:
           name: smv-${{ matrix.name }}
           path: build/*.smv
           retention-days: 7
+
+  images:
+    name: build images
+    needs: [validate, build, lint-dockerfiles]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      # Pushed even on pull requests: the e2e job runs in this image and can
+      # only pull it from the registry. Only main moves the `latest` tag.
+      - name: converter image (public)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/converter.Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.CONVERTER_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.CONVERTER_IMAGE) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Pulls the private nuXmv base, which must grant this repository read
+      # access under the package's "Manage Actions access" settings.
+      - name: pipeline image (private, contains nuXmv)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/pipeline.Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            NUXMV_IMAGE=${{ env.NUXMV_IMAGE }}
+            CONVERTER_IMAGE=${{ env.CONVERTER_IMAGE }}:${{ steps.meta.outputs.tag }}
+          tags: |
+            ${{ env.PIPELINE_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.PIPELINE_IMAGE) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  e2e:
+    name: e2e ${{ matrix.model }}
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/kripke-pipeline:${{ needs.images.outputs.tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      # actions/checkout needs to write into the workspace; the image runs
+      # as uid 10001 by default.
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [K_GBN_fixed, K_Karn_v2, K_RTO_v2]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: validate, convert, model-check
+        run: /opt/pipeline/scripts/run_pipeline.sh "examples/${{ matrix.model }}.json" out
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-${{ matrix.model }}
+          path: out/
+          retention-days: 14
