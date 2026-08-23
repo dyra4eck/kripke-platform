@@ -1,13 +1,7 @@
-# syntax=docker/dockerfile:1.7
-#
-# The converter alone. No nuXmv here, so this image is safe to publish.
-#
-# Same base as the nuXmv image so the two runtimes cannot drift apart.
 ARG BASE=debian:trixie-slim
 
 FROM ${BASE} AS build
 
-# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
         g++ cmake make ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -18,7 +12,6 @@ COPY cmake/ cmake/
 COPY src/ src/
 COPY examples/ examples/
 
-# Golden tests run during the build: a broken converter never becomes an image.
 RUN cmake -S . -B build \
         -DCMAKE_BUILD_TYPE=Release \
         -DSTATIC_LINK=ON \
