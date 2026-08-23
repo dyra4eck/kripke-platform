@@ -1,0 +1,8 @@
+ignored:
+  # FROM ${BASE} / ${CONVERTER_IMAGE}: hadolint cannot expand build args,
+  # so it reports a missing tag where the tag lives in the ARG default.
+  - DL3006
+  # Pinning apt package versions on Debian breaks the build at every point
+  # release; the base image tag is what pins the package set here.
+  - DL3008
+failure-threshold: warning
