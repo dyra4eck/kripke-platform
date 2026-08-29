@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@types/cytoscape": "^3.21.9",
+    "@types/cytoscape-edgehandles": "^4.0.5",
     "@types/dagre": "^0.7.54",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
@@ -22,6 +23,7 @@
   "dependencies": {
     "cytoscape": "^3.34.2",
     "cytoscape-dagre": "^4.0.1",
+    "cytoscape-edgehandles": "^4.0.1",
     "dagre": "^0.8.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

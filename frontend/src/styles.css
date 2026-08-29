@@ -259,3 +259,220 @@ select {
     max-height: 40vh;
   }
 }
+
+.hint {
+  position: absolute;
+  left: var(--gap);
+  bottom: var(--gap);
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.warn {
+  margin: 10px 0 0;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--violated);
+  background: #fdf2f1;
+  border-left: 2px solid var(--violated);
+}
+
+/* ------------------------------------------------------------- controls */
+
+input {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 13px;
+  width: 100%;
+  padding: 5px 7px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.name-input {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.field-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.field-row button {
+  flex: 0 0 auto;
+  min-width: 30px;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--violated);
+}
+
+button.wide {
+  width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chip-x {
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.chip-x:hover {
+  color: var(--violated);
+}
+
+.formulas li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* -------------------------------------------------------- verification */
+
+button.primary {
+  color: var(--panel);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+button.primary:hover:not(:disabled) {
+  color: var(--panel);
+  background: #1a45bb;
+}
+
+button.primary:disabled {
+  color: var(--panel);
+  background: var(--muted);
+  border-color: var(--muted);
+}
+
+.verdict-ok,
+.verdict-bad {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.verdict-ok {
+  color: var(--holds);
+}
+
+.verdict-bad {
+  color: var(--violated);
+}
+
+.timing {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.verdicts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.verdict-button {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  text-align: left;
+  background: var(--canvas);
+  border: 1px solid transparent;
+  border-left: 2px solid var(--line);
+}
+
+.verdicts .holds .verdict-button {
+  border-left-color: var(--holds);
+  color: var(--holds);
+}
+
+.verdicts .violated .verdict-button {
+  border-left-color: var(--violated);
+  color: var(--violated);
+}
+
+.verdicts li[data-open="true"] .verdict-button {
+  border-color: var(--violated);
+  border-left-width: 2px;
+}
+
+.verdict-button code {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.verdict-button:disabled {
+  cursor: default;
+}
+
+.trace {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.trace-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.trace-position {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.trace-position em {
+  font-style: normal;
+  color: var(--violated);
+}
+
+.problems {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--violated);
+}

@@ -1,0 +1,11 @@
+{
+  "name": "kripke-platform",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "gen:types": "npm --prefix frontend run gen:types",
+    "api": "PYTHONPATH=backend python3 -m uvicorn app:app --reload --port 8000",
+    "test": "python3 -m pytest tests -q"
+  }
+}
