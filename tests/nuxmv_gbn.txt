@@ -1,0 +1,33 @@
+*** This is nuXmv 2.2.0 (compiled on Fri May 29 11:00:56 2026)
+*** Copyright (c) 2014-2026, Fondazione Bruno Kessler
+
+##########################################################
+The transition relation is total: No deadlock state exists
+##########################################################
+-- specification AG !(window_full & transmitting)  is true
+-- specification AG ((window_full & !Connection_complete) -> AF transmitting)  is false
+-- as demonstrated by the following execution sequence
+Trace Description: CTL Counterexample 
+Trace Type: Counterexample 
+  -> State: 1.1 <-
+    state_ = s0
+    ACK_received = FALSE
+    Channel_open = TRUE
+    Connection_complete = FALSE
+    transmitting = TRUE
+    window_full = FALSE
+  -> State: 1.2 <-
+    state_ = s1
+    Packet_in_channel = TRUE
+  -> State: 1.5 <-
+    state_ = s5
+    Channel_open = FALSE
+    transmitting = FALSE
+    window_full = TRUE
+  -- Loop starts here
+  -> State: 1.6 <-
+    state_ = s_done
+    Connection_complete = TRUE
+    window_full = FALSE
+  -> State: 1.7 <-
+-- specification AG (transmitting -> AF window_full)  is true

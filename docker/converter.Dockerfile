@@ -3,7 +3,7 @@ ARG BASE=debian:trixie-slim
 FROM ${BASE} AS build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        g++ cmake make ca-certificates \
+        g++ cmake make ca-certificates nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src

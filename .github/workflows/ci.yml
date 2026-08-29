@@ -10,6 +10,7 @@ env:
   REGISTRY: ghcr.io
   CONVERTER_IMAGE: ghcr.io/${{ github.repository_owner }}/kripke-converter
   PIPELINE_IMAGE: ghcr.io/${{ github.repository_owner }}/kripke-pipeline
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/kripke-backend
   NUXMV_IMAGE: ghcr.io/${{ github.repository_owner }}/nuxmv:2.2.0
 
 concurrency:
@@ -195,6 +196,62 @@ jobs:
             ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.PIPELINE_IMAGE) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: backend image (private, contains nuXmv)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            PIPELINE_IMAGE=${{ env.PIPELINE_IMAGE }}:${{ steps.meta.outputs.tag }}
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.BACKEND_IMAGE) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  backend:
+    name: backend tests
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/kripke-pipeline:${{ needs.images.outputs.tag }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    steps:
+      - uses: actions/checkout@v5
+
+      # The pipeline image deliberately carries no web framework; the test
+      # dependencies are installed here rather than baked into a runtime image.
+      # Same virtualenv trick as backend.Dockerfile: the image's
+      # python3-jsonschema comes from apt, and pip cannot replace its
+      # dpkg-owned dependencies.
+      - name: install test dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends python3-pip python3-venv
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install --no-cache-dir -r backend/requirements-dev.txt
+
+      # Not skipped: nuXmv is present in this image, so every checker-backed
+      # test must actually run. A silent skip would hide a broken pipeline.
+      - name: pytest
+        run: |
+          /tmp/venv/bin/python -m pytest tests/ -q --junitxml=pytest.xml | tee out.txt
+          grep -q ' skipped' out.txt && { echo "::error::tests were skipped"; exit 1; } || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-results
+          path: pytest.xml
+          retention-days: 14
 
   e2e:
     name: e2e ${{ matrix.model }}

@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=converter /usr/local/bin/kripke_generator /usr/local/bin/kripke_generator
 COPY scripts/ /opt/pipeline/scripts/
 COPY schemas/ /opt/pipeline/schemas/
-RUN chmod 0755 /opt/pipeline/scripts/run_pipeline.sh /opt/pipeline/scripts/validate_model.py
+RUN chmod -R a+rX /opt/pipeline \
+    && chmod 0755 /opt/pipeline/scripts/run_pipeline.sh \
+                  /opt/pipeline/scripts/validate_model.py
 
 ENV KRIPKE_SCHEMA=/opt/pipeline/schemas/kripke.schema.json \
     NUXMV_CMD=/opt/pipeline/scripts/verify.cmd
