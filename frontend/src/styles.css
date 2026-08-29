@@ -145,7 +145,9 @@ select {
   background-size: 20px 20px;
 }
 
-.canvas > div {
+/* Only the cytoscape container fills the canvas. A bare `.canvas > div`
+   also caught the overlays and, being more specific, flattened them. */
+.canvas > .graph {
   position: absolute;
   inset: 0;
 }
@@ -475,4 +477,54 @@ button.primary:disabled {
   font-size: 12px;
   line-height: 1.5;
   color: var(--violated);
+}
+
+/* ----------------------------------------------------------- files */
+
+.file-button {
+  font-size: 13px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.file-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.file-button input {
+  display: none;
+}
+
+.canvas[data-dropping="true"] {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+.drop-hint,
+.notice {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  transform: translateX(-50%);
+  max-width: 520px;
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.notice {
+  border-color: var(--violated);
+  color: var(--violated);
+}
+
+.notice button {
+  margin-top: 8px;
 }

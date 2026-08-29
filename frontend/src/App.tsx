@@ -5,6 +5,7 @@ import Inspector, { type Selection } from "./Inspector";
 import Results, { type Verification } from "./Results";
 import { EXAMPLES } from "./examples";
 import { ApiError, health, verify } from "./api";
+import { ImportError, exportJson, exportSmv, readModelFile } from "./files";
 import {
   EMPTY_MODEL,
   addState,
@@ -33,6 +34,8 @@ export default function App() {
   });
   const [openVerdict, setOpenVerdict] = useState<number | null>(null);
   const [step, setStep] = useState(0);
+  const [dropping, setDropping] = useState(false);
+  const [notice, setNotice] = useState<string[] | null>(null);
 
   // Any edit invalidates the last run: showing verdicts for a model that no
   // longer exists is worse than showing none.
@@ -84,6 +87,28 @@ export default function App() {
     setRenamed({ from, to });
     setSelection({ kind: "state", id: to });
   }, []);
+
+  const importFile = useCallback(
+    async (file: File) => {
+      try {
+        const imported = await readModelFile(file);
+        setModel(imported);
+        setSelection(null);
+        setRenamed(null);
+        setVerification({ status: "idle", result: null, errors: [] });
+        setOpenVerdict(null);
+        setLayoutNonce((n) => n + 1);
+        setNotice(null);
+      } catch (error) {
+        setNotice(
+          error instanceof ImportError
+            ? error.problems
+            : [error instanceof Error ? error.message : String(error)],
+        );
+      }
+    },
+    [],
+  );
 
   const load = useCallback((next: KripkeModel) => {
     setModel(next);
@@ -180,6 +205,35 @@ export default function App() {
           Удалить
         </button>
 
+        <label className="file-button">
+          Открыть
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importFile(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+
+        <button onClick={() => exportJson(model)}>Скачать JSON</button>
+        <button
+          onClick={() =>
+            void exportSmv(model).catch((error) =>
+              setNotice([
+                error instanceof ApiError
+                  ? error.errors.join("; ")
+                  : String(error),
+              ]),
+            )
+          }
+          disabled={backend !== "up"}
+        >
+          Скачать SMV
+        </button>
+
         <button
           className="primary"
           onClick={run}
@@ -208,7 +262,21 @@ export default function App() {
         </span>
       </header>
 
-      <div className="canvas">
+      <div
+        className="canvas"
+        data-dropping={dropping}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDropping(true);
+        }}
+        onDragLeave={() => setDropping(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDropping(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) void importFile(file);
+        }}
+      >
         <KripkeGraph
           model={model}
           rankDir={rankDir}
@@ -221,6 +289,19 @@ export default function App() {
           onSelect={onSelect}
           onAddTransition={onAddTransition}
         />
+        {dropping && (
+          <p className="drop-hint">Отпустите файл, чтобы открыть модель</p>
+        )}
+        {notice && (
+          <div className="notice" role="alert">
+            <ul className="problems">
+              {notice.map((n) => (
+                <li key={n}>{n}</li>
+              ))}
+            </ul>
+            <button onClick={() => setNotice(null)}>Понятно</button>
+          </div>
+        )}
         {connectMode && (
           <p className="hint">
             Потяните от края состояния к другому, чтобы создать переход.

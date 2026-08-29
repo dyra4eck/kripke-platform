@@ -9,8 +9,8 @@ import {
   removeTransition,
   setSpecifications,
   toggleInitial,
-  unreachable,
 } from "./edit";
+import { deadEnds, unreachable } from "./validate";
 import { parseEdgeId } from "./KripkeGraph";
 import type { KripkeModel } from "./types/kripke";
 
@@ -43,10 +43,7 @@ export default function Inspector({
   const outgoing = model.transitions.filter(([f]) => f === state);
   const incoming = model.transitions.filter(([, t]) => t === state);
 
-  const dead = useMemo(() => {
-    const withOutgoing = new Set(model.transitions.map(([f]) => f));
-    return model.states.filter((s) => !withOutgoing.has(s));
-  }, [model]);
+  const dead = useMemo(() => deadEnds(model), [model]);
   const orphans = useMemo(() => unreachable(model), [model]);
   const vocabulary = useMemo(() => allPredicates(model), [model]);
 

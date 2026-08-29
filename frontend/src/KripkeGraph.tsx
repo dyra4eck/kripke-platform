@@ -375,5 +375,5 @@ export default function KripkeGraph({
     else eh.current.disableDrawMode();
   }, [connectMode]);
 
-  return <div ref={container} />;
+  return <div className="graph" ref={container} />;
 }

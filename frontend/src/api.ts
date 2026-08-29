@@ -78,6 +78,25 @@ export const convert = (model: KripkeModel) => post("/convert", model);
 /** Validate, generate SMV and model-check. */
 export const verify = (model: KripkeModel) => post("/verify", model);
 
+/** The SMV file itself, for downloading. */
+export async function convertRaw(model: KripkeModel): Promise<string> {
+  const response = await fetch(`${BASE}/convert.smv`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(model),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const detail = body?.detail ?? null;
+    throw new ApiError(
+      response.status,
+      detail && typeof detail === "object" && "stage" in detail ? detail : null,
+      detail?.errors?.[0] ?? `Запрос завершился с кодом ${response.status}`,
+    );
+  }
+  return response.text();
+}
+
 export async function health(): Promise<boolean> {
   try {
     const r = await fetch(`${BASE}/health`);
