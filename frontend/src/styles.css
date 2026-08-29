@@ -259,3 +259,100 @@ select {
     max-height: 40vh;
   }
 }
+
+.hint {
+  position: absolute;
+  left: var(--gap);
+  bottom: var(--gap);
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.warn {
+  margin: 10px 0 0;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--violated);
+  background: #fdf2f1;
+  border-left: 2px solid var(--violated);
+}
+
+/* ------------------------------------------------------------- controls */
+
+input {
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 13px;
+  width: 100%;
+  padding: 5px 7px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.name-input {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.field-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.field-row button {
+  flex: 0 0 auto;
+  min-width: 30px;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--violated);
+}
+
+button.wide {
+  width: 100%;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chip-x {
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.chip-x:hover {
+  color: var(--violated);
+}
+
+.formulas li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
