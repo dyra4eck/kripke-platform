@@ -109,6 +109,10 @@ jobs:
             exit 1
           fi
 
+      - name: build the editor
+        run: npm run build
+        working-directory: frontend
+
   build:
     name: build ${{ matrix.name }}
     runs-on: ubuntu-latest
