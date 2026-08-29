@@ -128,6 +128,16 @@ const style: cytoscape.StylesheetJson = [
     style: { "loop-direction": "0deg", "loop-sweep": "-40deg" },
   },
   {
+    // The counterexample path, drawn over the rest of the model.
+    selector: ".trace",
+    style: { "border-color": "#b3261e", "line-color": "#b3261e",
+             "target-arrow-color": "#b3261e", width: 2.5, "border-width": 2 },
+  },
+  {
+    selector: "node.trace-current",
+    style: { "background-color": "#fdeceb", "border-width": 3 },
+  },
+  {
     selector: ".start-marker",
     style: { width: 1, height: 1, "background-opacity": 0, label: "" },
   },
@@ -167,6 +177,9 @@ interface Props {
   renamed: { from: string; to: string } | null;
   /** Kept in sync so the highlight survives a rebuild. */
   selectedId: string | null;
+  /** States of the counterexample being replayed, in order. */
+  trace: string[] | null;
+  traceStep: number;
   onSelect: (id: string | null, kind: "state" | "transition" | null) => void;
   onAddTransition: (from: string, to: string) => void;
 }
@@ -178,6 +191,8 @@ export default function KripkeGraph({
   connectMode,
   renamed,
   selectedId,
+  trace,
+  traceStep,
   onSelect,
   onAddTransition,
 }: Props) {
@@ -307,6 +322,26 @@ export default function KripkeGraph({
     }
 
   }, [model, rankDir, renamed]);
+
+  // The counterexample path. Recomputed from ids rather than stored on the
+  // elements, so a rebuild cannot leave stale highlighting behind.
+  useEffect(() => {
+    const instance = cy.current;
+    if (!instance) return;
+    instance.elements().removeClass("trace trace-current");
+    if (!trace || trace.length === 0) return;
+
+    for (const id of trace) instance.getElementById(id).addClass("trace");
+    for (let i = 0; i + 1 < trace.length; i++) {
+      instance.getElementById(edgeId(trace[i], trace[i + 1])).addClass("trace");
+    }
+
+    const current = instance.getElementById(trace[Math.min(traceStep, trace.length - 1)]);
+    if (!current.empty()) {
+      current.addClass("trace-current");
+      instance.animate({ center: { eles: current } }, { duration: 200 });
+    }
+  }, [trace, traceStep, model]);
 
   // Selection is view state, not model data. Rebuilding the graph for it
   // would tear the elements out from under the tap that caused it.

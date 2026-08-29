@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import KripkeGraph, { parseEdgeId } from "./KripkeGraph";
 import Inspector, { type Selection } from "./Inspector";
+import Results, { type Verification } from "./Results";
 import { EXAMPLES } from "./examples";
-import { health } from "./api";
+import { ApiError, health, verify } from "./api";
 import {
   EMPTY_MODEL,
   addState,
@@ -25,6 +26,47 @@ export default function App() {
   const [renamed, setRenamed] = useState<{ from: string; to: string } | null>(
     null,
   );
+  const [verification, setVerification] = useState<Verification>({
+    status: "idle",
+    result: null,
+    errors: [],
+  });
+  const [openVerdict, setOpenVerdict] = useState<number | null>(null);
+  const [step, setStep] = useState(0);
+
+  // Any edit invalidates the last run: showing verdicts for a model that no
+  // longer exists is worse than showing none.
+  const editModel = useCallback((next: KripkeModel) => {
+    setModel(next);
+    setVerification({ status: "idle", result: null, errors: [] });
+    setOpenVerdict(null);
+  }, []);
+
+  const run = useCallback(async () => {
+    setVerification({ status: "running", result: null, errors: [] });
+    setOpenVerdict(null);
+    try {
+      const result = await verify(model);
+      setVerification({ status: "done", result, errors: [] });
+    } catch (error) {
+      const errors =
+        error instanceof ApiError
+          ? error.errors
+          : [error instanceof Error ? error.message : String(error)];
+      setVerification({ status: "failed", result: null, errors });
+    }
+  }, [model]);
+
+  const trace = useMemo(() => {
+    const verdict =
+      openVerdict === null
+        ? null
+        : (verification.result?.check?.verdicts[openVerdict] ?? null);
+    if (!verdict) return null;
+    return verdict.trace
+      .map((s) => s.state)
+      .filter((s): s is string => typeof s === "string");
+  }, [verification, openVerdict]);
 
   useEffect(() => {
     let alive = true;
@@ -45,6 +87,8 @@ export default function App() {
 
   const load = useCallback((next: KripkeModel) => {
     setModel(next);
+    setVerification({ status: "idle", result: null, errors: [] });
+    setOpenVerdict(null);
     setRenamed(null);
     setSelection(null);
     setLayoutNonce((n) => n + 1);
@@ -57,19 +101,19 @@ export default function App() {
   );
 
   const onAddTransition = useCallback(
-    (from: string, to: string) => setModel((m) => addTransition(m, from, to)),
-    [],
+    (from: string, to: string) => editModel(addTransition(model, from, to)),
+    [editModel, model],
   );
 
   const remove = useCallback(() => {
     if (!selection) return;
-    setModel((m) =>
+    editModel(
       selection.kind === "state"
-        ? removeState(m, selection.id)
-        : removeTransition(m, ...parseEdgeId(selection.id)),
+        ? removeState(model, selection.id)
+        : removeTransition(model, ...parseEdgeId(selection.id)),
     );
     setSelection(null);
-  }, [selection]);
+  }, [selection, model, editModel]);
 
   // Delete/Backspace removes the selection, unless a text field has focus.
   useEffect(() => {
@@ -113,7 +157,7 @@ export default function App() {
         <button
           onClick={() => {
             const name = freshStateName(model);
-            setModel((m) => addState(m, name));
+            editModel(addState(model, name));
             setSelection({ kind: "state", id: name });
           }}
         >
@@ -134,6 +178,14 @@ export default function App() {
 
         <button onClick={remove} disabled={!selection}>
           Удалить
+        </button>
+
+        <button
+          className="primary"
+          onClick={run}
+          disabled={verification.status === "running" || backend !== "up"}
+        >
+          {verification.status === "running" ? "Проверяю…" : "Проверить"}
         </button>
 
         <div className="spacer" />
@@ -164,6 +216,8 @@ export default function App() {
           connectMode={connectMode}
           renamed={renamed}
           selectedId={selection?.id ?? null}
+          trace={trace}
+          traceStep={step}
           onSelect={onSelect}
           onAddTransition={onAddTransition}
         />
@@ -174,13 +228,22 @@ export default function App() {
         )}
       </div>
 
-      <Inspector
-        model={model}
-        selection={selection}
-        onChange={setModel}
-        onSelect={setSelection}
-        onRename={rename}
-      />
+      <aside className="side">
+        <Results
+          verification={verification}
+          openVerdict={openVerdict}
+          step={step}
+          onOpenVerdict={setOpenVerdict}
+          onStep={setStep}
+        />
+        <Inspector
+          model={model}
+          selection={selection}
+          onChange={editModel}
+          onSelect={setSelection}
+          onRename={rename}
+        />
+      </aside>
     </div>
   );
 }

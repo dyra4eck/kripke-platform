@@ -51,7 +51,7 @@ export default function Inspector({
   const vocabulary = useMemo(() => allPredicates(model), [model]);
 
   return (
-    <aside className="side">
+    <>
       <section>
         <h2>Выбрано</h2>
 
@@ -164,7 +164,7 @@ export default function Inspector({
         value={model.specifications ?? []}
         onChange={(next) => onChange(setSpecifications(model, next))}
       />
-    </aside>
+    </>
   );
 }
 
