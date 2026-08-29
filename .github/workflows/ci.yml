@@ -104,8 +104,11 @@ jobs:
 
       - name: types must match the schema
         run: |
-          if ! git diff --exit-code -- frontend/src/types/kripke.ts; then
-            echo "::error::frontend/src/types/kripke.ts is stale; run 'npm run gen:types' in frontend/ and commit the result"
+          # `git add` first: a plain `git diff` ignores untracked files, so a
+          # deleted or never-committed kripke.ts would slip through silently.
+          git add -A frontend/src/types
+          if ! git diff --cached --exit-code -- frontend/src/types/kripke.ts; then
+            echo "::error::frontend/src/types/kripke.ts is stale or missing; run 'npm run gen:types' in frontend/ and commit the result"
             exit 1
           fi
 
