@@ -1,0 +1,11 @@
+{
+  "name": "kripke-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen:types": "json2ts --input ../schemas/kripke.schema.json --output src/types/kripke.ts --additionalProperties false --bannerComment \"/* eslint-disable */\n/**\n * Generated from schemas/kripke.schema.json -- do not edit by hand.\n * Run \\`npm run gen:types\\` after changing the schema.\n */\""
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^16.0.0"
+  }
+}
