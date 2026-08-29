@@ -230,16 +230,20 @@ jobs:
 
       # The pipeline image deliberately carries no web framework; the test
       # dependencies are installed here rather than baked into a runtime image.
+      # Same virtualenv trick as backend.Dockerfile: the image's
+      # python3-jsonschema comes from apt, and pip cannot replace its
+      # dpkg-owned dependencies.
       - name: install test dependencies
         run: |
-          apt-get update && apt-get install -y --no-install-recommends python3-pip
-          pip install --no-cache-dir --break-system-packages -r backend/requirements-dev.txt
+          apt-get update && apt-get install -y --no-install-recommends python3-pip python3-venv
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install --no-cache-dir -r backend/requirements-dev.txt
 
       # Not skipped: nuXmv is present in this image, so every checker-backed
       # test must actually run. A silent skip would hide a broken pipeline.
       - name: pytest
         run: |
-          python3 -m pytest tests/ -q --junitxml=pytest.xml | tee out.txt
+          /tmp/venv/bin/python -m pytest tests/ -q --junitxml=pytest.xml | tee out.txt
           grep -q ' skipped' out.txt && { echo "::error::tests were skipped"; exit 1; } || true
 
       - uses: actions/upload-artifact@v4

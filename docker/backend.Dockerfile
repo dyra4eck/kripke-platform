@@ -9,15 +9,21 @@ FROM ${PIPELINE_IMAGE}
 USER root
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3-pip \
+        python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
+# A virtualenv rather than --break-system-packages: the base image installs
+# python3-jsonschema through apt, and pip cannot upgrade a dpkg-owned
+# dependency (rpds-py) -- it fails with uninstall-no-record-file. The venv
+# gets its own site-packages and the conflict disappears.
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
 COPY backend/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt \
-    && rm /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 COPY backend/ /opt/backend/
-
+RUN chmod -R a+rX /opt/backend
 # runner.py resolves these relative to the repo root by default, which does
 # not exist in this image.
 ENV KRIPKE_SCRIPTS=/opt/pipeline/scripts \
@@ -31,6 +37,6 @@ WORKDIR /opt/backend
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-    CMD python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"
+    CMD ["python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
 
 ENTRYPOINT ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
